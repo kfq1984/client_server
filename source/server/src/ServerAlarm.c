@@ -36,6 +36,12 @@ void ErrorReport(int errcode)
 			break;
 		}
 
+		case READ_SOCKET_ERR:
+		{
+			perror("fail to read");
+			break;
+		}
+
 		case FORK_ERR:
 		{
 			perror("fail to fork");

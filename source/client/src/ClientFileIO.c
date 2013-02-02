@@ -24,8 +24,7 @@ void ReceiveFileData(int socket)
 		nread = read(socket, buf, MAX_LINE);
 		if(nread < 0)
 		{
-			// All done
-			printf("read error....\n");
+			ErrorReport(RECEIVE_DATA_ERR);
 			close(fd);
 			break;
 		}
