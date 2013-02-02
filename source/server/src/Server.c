@@ -2,7 +2,6 @@
 #include "ServerFunc.h"
 #include "ServerMacro.h"
 
-
 int main(int argc,char **argv)
 {
     struct sockaddr_in server_addr;
@@ -13,6 +12,7 @@ int main(int argc,char **argv)
     fd_set readfds, testfds;
 
 	//  Create and name a socket for the server.
+	
 
     if(FALSE == (server_sockfd = socket(AF_INET,SOCK_STREAM,0)))
     {
@@ -64,20 +64,20 @@ int main(int argc,char **argv)
 
         if(result < 1) 
 		{
-            perror("server5");
+            errorreport(SOCKET_SELECT_ERR);
             exit(1);
         }
 
-	/*  Once we know we've got activity,
-   	 we find which descriptor it's on by checking each in turn using FD_ISSET.  */
+		// Once we know we've got activity,
+   	 	// we find which descriptor it's on by checking each in turn using FD_ISSET.
 
         for(fd = 0; fd < FD_SETSIZE; fd++) 
 		{
             if(FD_ISSET(fd,&testfds)) 
 			{
 
-	/*  If the activity is on server_sockfd, it must be a request for a new connection
-    	and we add the associated client_sockfd to the descriptor set.  */
+				// If the activity is on server_sockfd, it must be a request for a new connection
+    			// and we add the associated client_sockfd to the descriptor set. 
 
                 if(fd == server_sockfd) 
 				{
@@ -87,9 +87,9 @@ int main(int argc,char **argv)
                     printf("adding client on fd %d\n", client_sockfd);
                 }
 
-	/*  If it isn't the server, it must be client activity.
-    	If close is received, the client has gone away and we remove it from the descriptor set.
-    	Otherwise, we 'serve' the client as in the previous examples.  */
+				// If it isn't the server, it must be client activity.
+    			// If close is received, the client has gone away and we remove it from the descriptor set.
+    			// Otherwise, we 'serve' the client as in the previous examples.  */
 
                 else 
 				{
@@ -104,11 +104,14 @@ int main(int argc,char **argv)
 
                     else 
 					{
-					
 						read(fd, ch, MAX_LINE);
-						sleep(5);
-                        printf("serving client on fd %d\n", fd);
-                        write(fd, ch, MAX_LINE);
+						sleep(1);                    
+						printf("serving client on fd %d\n", fd);
+						SendFileData(fd);
+                        //if( !SendFileData(fd) )
+                        //{
+                        	//exit(1);
+                        //}
                     }
                 }
             }

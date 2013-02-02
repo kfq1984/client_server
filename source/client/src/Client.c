@@ -37,19 +37,31 @@ int main(int argc,char **argv)
 		exit(1);
 	}
 
-	// send data
-	char *str = "test string";
-	send(s_fd, str , strlen(str) + 1, 0);
+	char *str = "Test String";
+	write(s_fd, str , strlen(str) + 1);
 
 	// receive data
 	printf("Begin receiving data....\n");
-	
-	if( FALSE == recv(s_fd , buf, MAX_LINE, 0) )
+	//fcntl(s_fd, F_SETFL, O_NONBLOCK);
+	//while(1)
 	{
-		errorreport(RECEIVE_DATA_ERR);
-		exit(1);
+		int ret;
+		ret = read(s_fd , buf, strlen(str) + 1);
+		if( FALSE == ret )
+		{
+			errorreport(RECEIVE_DATA_ERR);
+			exit(1);
+		}
+		else if( ret == 0 )
+		{
+			// nothing to read
+			//break;
+		}
+		else if( ret > 0 )
+		{
+			printf("the length of str = %s\n" , buf);
+		}
 	}
-	printf("the length of str = %s\n" , buf);
 
 	// close socket
 	if(close(s_fd) == -1)

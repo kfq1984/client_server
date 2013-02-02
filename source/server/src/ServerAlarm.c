@@ -23,6 +23,18 @@ void errorreport(int errcode)
 			perror("fail to listen");
 			break;
 		}
+
+		case SOCKET_SELECT_ERR:
+		{
+			perror("fail to select");
+			break;
+		}
+
+		case WRITE_SOCKET_ERR:
+		{
+			perror("fail to write");
+			break;
+		}
 		
 		default:
 		{
