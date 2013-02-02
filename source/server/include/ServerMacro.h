@@ -1,6 +1,6 @@
 
 #define INET_ADDR_STR_LEN   1024
-#define MAX_LINE 100
+#define MAX_LINE 1024
 #define SERVER_PORT  9237
 #define TRUE         0
 #define FALSE        -1
@@ -14,3 +14,5 @@
 #define SERVER_LISTEN_ERR 1003
 #define WRITE_SOCKET_ERR  1004
 #define SOCKET_SELECT_ERR 1005
+#define FORK_ERR			1006
+#define FILE_OPEN_ERR		1007

@@ -2,20 +2,28 @@
 #include "ServerFunc.h"
 #include "ServerMacro.h"
 
+const char *filename = "test.txt";
 
 void SendFileData(int client_fd)
 {
-	int n;
-	char *str = "Test String";
-	int i = 0;
-	for( i = 0; i < 100; i++ )
+	int fd;
+	int nread;
+	int nwrite, i;
+	char buf[MAX_LINE];
+
+	// Open the file
+	fd = open(filename, O_RDONLY);
+	if(fd < 0)
 	{
-		n = write(client_fd, str, strlen(str) + 1);
-		if( n < 0 )
-		{
-			errorreport(WRITE_SOCKET_ERR);
-			return;
-		}	
+		errorreport(FILE_OPEN_ERR);
+		exit(1);
+	}	
+
+	// Send the file, one chunk at a time
+	do
+	{
+		// Get one chunk of the file from disk
+		nread = read( fd );
 	}
 }
 

@@ -47,15 +47,13 @@ int main(int argc,char **argv)
     FD_ZERO(&readfds);
     FD_SET(server_sockfd, &readfds);
 
-	/*  Now wait for clients and requests.
-    	Since we have passed a null pointer as the timeout parameter, no timeout will occur.
-    	The program will exit and report an error if select returns a value of less than 1.  */
-
+	//  Now wait for clients and requests.
     while(1) 
 	{
         char ch[MAX_LINE];
         int fd;
         int nread;
+		int pid;
 
         testfds = readfds;
 
@@ -95,23 +93,37 @@ int main(int argc,char **argv)
 				{
                     ioctl(fd, FIONREAD, &nread);
 
+					// client exit
                     if(nread == 0) 
 					{
                         close(fd);
                         FD_CLR(fd, &readfds);
                         printf("removing client on fd %d\n", fd);
                     }
-
+					// read data from client
                     else 
 					{
 						read(fd, ch, MAX_LINE);
 						sleep(1);                    
 						printf("serving client on fd %d\n", fd);
-						SendFileData(fd);
-                        //if( !SendFileData(fd) )
-                        //{
-                        	//exit(1);
-                        //}
+						// create child process to send file
+						pid = fork();
+						if(pid < 0)
+						{
+							errorreport(FORK_ERR);
+							exit(1);
+						}
+						else if(pid == 0)
+						{
+							// This is the client process: sending file
+							close(server_sockfd);
+							SendFileData(fd);
+							exit(0);
+						}
+						else
+						{
+							close(fd);
+						}
                     }
                 }
             }

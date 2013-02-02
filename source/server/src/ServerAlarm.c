@@ -35,6 +35,18 @@ void errorreport(int errcode)
 			perror("fail to write");
 			break;
 		}
+
+		case FORK_ERR:
+		{
+			perror("fail to fork");
+			break;
+		}
+
+		case FILE_OPEN_ERR:
+		{
+			perror("fail to open file");
+			break;
+		}
 		
 		default:
 		{
