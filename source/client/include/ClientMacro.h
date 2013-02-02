@@ -4,11 +4,9 @@
 #define SERVER_PORT  9237
 #define TRUE         0
 #define FALSE        -1
-#define MAX_CONNECT_NUM    10
-
-
 
 /*define error code*/
 #define GET_SOCKET_ERR    1001
-#define SOCKET_BIND_ERR   1002
-#define SERVER_LISTEN_ERR 1003
+#define CLIENT_CONNECT_ERR 1002
+#define RECEIVE_DATA_ERR	1003
+#define CLOSE_SOCKET_ERR	1004

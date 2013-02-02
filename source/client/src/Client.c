@@ -4,52 +4,57 @@
 
 int main(int argc,char **argv)
 {
-	struct sockaddr_in sin;
-	char buf[MAX_LINE];
+	struct sockaddr_in server_sockaddr;
 	int s_fd;
-	int port = 8000;
-	char *str = "test string";
-	char *serverIP = "127.0.0.1";
+	
+	char buf[MAX_LINE];
 	int n;
-	if(argc > 1)
+	
+	if(argc != 2)
 	{
-		str = argv[1];
+		printf("Usage: ./client server_ip_addr\n");
+		exit(1);
 	}
-	
-	bzero(&sin , sizeof(sin));
-	
-	sin.sin_family = AF_INET;
-	inet_pton(AF_INET,serverIP,(void *)&sin.sin_addr);
-	sin.sin_port = htons(port);
-	
+	char *server_IP = argv[1];
+
+	// Create socket for client
 	if((s_fd = socket(AF_INET,SOCK_STREAM,0)) == -1)
 	{
-		perror("fail to create socket");
-		exit(1);
-	}
-	if(connect(s_fd,(struct sockaddr *)&sin,sizeof(sin)) == -1)
-	{
-		perror("fail to create socket");
+		errorreport(GET_SOCKET_ERR);
 		exit(1);
 	}
 	
-	n = send(s_fd, str , strlen(str) + 1, 0);
-	if(n == -1)
+	bzero(&server_sockaddr, sizeof(server_sockaddr));
+	server_sockaddr.sin_family = AF_INET;
+	inet_pton(AF_INET, server_IP, (void *)&server_sockaddr.sin_addr);
+	server_sockaddr.sin_port = htons(SERVER_PORT);
+
+	// connect server
+	printf("Client connecting....\n");
+	if(FALSE == connect(s_fd, (struct sockaddr *)&server_sockaddr, sizeof(server_sockaddr)))
 	{
-		perror("fail to send");
+		errorreport(CLIENT_CONNECT_ERR);
 		exit(1);
 	}
+
+	// send data
+	char *str = "test string";
+	send(s_fd, str , strlen(str) + 1, 0);
+
+	// receive data
+	printf("Begin receiving data....\n");
 	
-	n = recv(s_fd ,buf , MAX_LINE, 0);
-	if(n == -1)
+	if( FALSE == recv(s_fd , buf, MAX_LINE, 0) )
 	{
-		perror("fail to recv");
+		errorreport(RECEIVE_DATA_ERR);
 		exit(1);
 	}
 	printf("the length of str = %s\n" , buf);
+
+	// close socket
 	if(close(s_fd) == -1)
 	{
-		perror("fail to close");
+		errorreport(CLOSE_SOCKET_ERR);
 		exit(1);
 	}
 	return 0;

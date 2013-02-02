@@ -14,15 +14,21 @@ void errorreport(int errcode)
 			break;
 		}
 
-		case SOCKET_BIND_ERR:
+		case CLIENT_CONNECT_ERR:
 		{
-			perror("fail to bind");
+			perror("fail to connect");
 			break;
 		}
 
-		case SERVER_LISTEN_ERR:
+		case RECEIVE_DATA_ERR:
 		{
-			perror("fail to listen");
+			perror("fail to receive data");
+			break;
+		}
+
+		case CLOSE_SOCKET_ERR:
+		{
+			perror("fail to close socket");
 			break;
 		}
 		
