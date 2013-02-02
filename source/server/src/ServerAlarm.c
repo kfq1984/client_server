@@ -1,7 +1,6 @@
-#include "server.h"
-
-
-
+#include "Server.h"
+#include "ServerFunc.h"
+#include "ServerMacro.h"
 
 void errorreport(int errcode)
 {

@@ -1,9 +1,7 @@
 
-
-
-#include "client.h"
-
-
+#include "Client.h"
+#include "ClientFunc.h"
+#include "ClientMacro.h"
 
 
 void errorreport(int errcode)

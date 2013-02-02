@@ -1,4 +1,6 @@
-#include "server.h"
+#include "Server.h"
+#include "ServerFunc.h"
+#include "ServerMacro.h"
 
 
 int main(int argc,char **argv)
@@ -6,7 +8,7 @@ int main(int argc,char **argv)
     struct sockaddr_in stru_Server_Addr;
     struct sockaddr_in stru_Client_Addr;
     int server_sockfd, client_sockfd;
-    int server_len, client_len;
+    socklen_t server_len, client_len;
     int result;
     fd_set readfds, testfds;
 
@@ -71,9 +73,9 @@ int main(int argc,char **argv)
     and we add the associated client_sockfd to the descriptor set.  */
 
                 if(fd == server_sockfd) {
-                    client_len = sizeof(struClientAddr);
+                    client_len = sizeof(stru_Client_Addr);
                     client_sockfd = accept(server_sockfd, 
-                        (struct sockaddr *)&struClientAddr, &client_len);
+                        (struct sockaddr *)&stru_Client_Addr, &client_len);
                     FD_SET(client_sockfd, &readfds);
                     printf("adding client on fd %d\n", client_sockfd);
                 }
