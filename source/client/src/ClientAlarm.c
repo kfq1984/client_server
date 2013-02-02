@@ -4,7 +4,7 @@
 #include "ClientMacro.h"
 
 
-void errorreport(int errcode)
+void ErrorReport(int errcode)
 {
 	switch(errcode)
 	{
@@ -29,6 +29,12 @@ void errorreport(int errcode)
 		case CLOSE_SOCKET_ERR:
 		{
 			perror("fail to close socket");
+			break;
+		}
+
+		case FILE_OPEN_ERR:
+		{
+			perror("fail to open file");
 			break;
 		}
 		

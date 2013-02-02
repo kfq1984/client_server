@@ -4,7 +4,7 @@
 
 const char *filename = "test.txt";
 
-void SendFileData(int client_fd)
+void SendFileData(int socket)
 {
 	int fd;
 	int nread;
@@ -15,7 +15,7 @@ void SendFileData(int client_fd)
 	fd = open(filename, O_RDONLY);
 	if(fd < 0)
 	{
-		errorreport(FILE_OPEN_ERR);
+		ErrorReport(FILE_OPEN_ERR);
 		exit(1);
 	}	
 
@@ -23,8 +23,27 @@ void SendFileData(int client_fd)
 	do
 	{
 		// Get one chunk of the file from disk
-		nread = read( fd );
-	}
+		nread = read(fd, buf, MAX_LINE);
+		if(nread == 0)
+		{
+			// All Done, close the file and the socket
+			close(fd);
+			close(socket);
+			break;
+		}
+
+		// Send the chunck
+		for(i = 0; i < nread; i+= nwrite)
+		{
+			// write might not take it all in one call, so we have to try until it's all written
+			nwrite = write(socket, buf + i, nread - i);
+			if(nwrite < 0)
+			{
+				ErrorReport(WRITE_SOCKET_ERR);
+				exit(1);
+			}
+		}
+	} while(1);
 }
 
 

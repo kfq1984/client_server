@@ -17,7 +17,7 @@ int main(int argc,char **argv)
     if(FALSE == (server_sockfd = socket(AF_INET,SOCK_STREAM,0)))
     {
         // Create socket failed, report error
-        errorreport(GET_SOCKET_ERR);
+        ErrorReport(GET_SOCKET_ERR);
         exit(1);
     }
 
@@ -31,7 +31,7 @@ int main(int argc,char **argv)
     if(FALSE == (bind(server_sockfd,(struct sockaddr *)&server_addr ,sizeof(server_addr)))) 
     {
         // Socket bind failed, report error
-        errorreport(SOCKET_BIND_ERR);
+        ErrorReport(SOCKET_BIND_ERR);
         exit(1);
     }
 
@@ -40,7 +40,7 @@ int main(int argc,char **argv)
     if(FALSE == listen(server_sockfd, MAX_CONNECT_NUM))
     {
     	// Listen failed, report error
-    	errorreport(SERVER_LISTEN_ERR);
+    	ErrorReport(SERVER_LISTEN_ERR);
 		exit(1);
     }
 
@@ -62,7 +62,7 @@ int main(int argc,char **argv)
 
         if(result < 1) 
 		{
-            errorreport(SOCKET_SELECT_ERR);
+            ErrorReport(SOCKET_SELECT_ERR);
             exit(1);
         }
 
@@ -106,11 +106,12 @@ int main(int argc,char **argv)
 						read(fd, ch, MAX_LINE);
 						sleep(1);                    
 						printf("serving client on fd %d\n", fd);
+                        #if 0
 						// create child process to send file
 						pid = fork();
 						if(pid < 0)
 						{
-							errorreport(FORK_ERR);
+							ErrorReport(FORK_ERR);
 							exit(1);
 						}
 						else if(pid == 0)
@@ -124,6 +125,8 @@ int main(int argc,char **argv)
 						{
 							close(fd);
 						}
+                        #endif
+                        SendFileData(fd);
                     }
                 }
             }

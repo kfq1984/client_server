@@ -2,7 +2,7 @@
 #include "ServerFunc.h"
 #include "ServerMacro.h"
 
-void errorreport(int errcode)
+void ErrorReport(int errcode)
 {
 	switch(errcode)
 	{

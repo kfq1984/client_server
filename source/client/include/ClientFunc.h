@@ -1,2 +1,3 @@
 
-void errorreport(int errcode);
+void ErrorReport(int errcode);
+void ReceiveFileData(int socket);
