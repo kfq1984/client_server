@@ -1,3 +1,3 @@
 
 void ErrorReport(int errcode);
-int SendFileData(int client_fd);
+void SendFileData(int client_fd);

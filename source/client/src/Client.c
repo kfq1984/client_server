@@ -6,7 +6,6 @@ int main(int argc,char **argv)
 {
 	struct sockaddr_in server_sockaddr;
 	int socket_fd;
-	int result;
 	
 	if(argc != 2)
 	{
@@ -36,22 +35,14 @@ int main(int argc,char **argv)
 	}
 
 	char *str = "Test String";
-	if(FALSE == send(socket_fd, str , strlen(str) + 1, 0))
-	{
-	    ErrorReport(CLIENT_SEND_DATA_ERR);
-		exit(1);
-	}
+	write(socket_fd, str , strlen(str) + 1);
 
 	// receive data
 	printf("Begin receiving data....\n");
-	result = ReceiveFileData(socket_fd);
-	if(FALSE == result)
-	{
-	    exit(1);
-	}
+	ReceiveFileData(socket_fd);
 
 	// close socket
-	if(FALSE == close(socket_fd))
+	if(close(socket_fd) == -1)
 	{
 		ErrorReport(CLOSE_SOCKET_ERR);
 		exit(1);

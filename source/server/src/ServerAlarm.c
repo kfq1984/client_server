@@ -54,18 +54,6 @@ void ErrorReport(int errcode)
 			break;
 		}
 		
-		case FILE_READ_ERR:
-		{
-			perror("fail to read file content");
-			break;
-		}
-
-		case FILE_SEND_ERR:
-		{
-			perror("fail to send file");
-			break;
-		}
-		
 		default:
 		{
 			perror("can not find error code");
