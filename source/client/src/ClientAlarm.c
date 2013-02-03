@@ -49,6 +49,18 @@ void ErrorReport(int errcode)
 			perror("fail to read file");
 			break;
 		}
+
+		case FILE_LSEEK_ERR:
+		{
+			perror("fail to lseek file");
+			break;
+		}
+		
+		case SERVER_RESPONSE_ERR:
+		{
+			perror("Server fail to response to client");
+			break;
+		}
 		
 		default:
 		{

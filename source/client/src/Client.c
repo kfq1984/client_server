@@ -7,6 +7,7 @@ int main(int argc,char **argv)
 	struct sockaddr_in server_sockaddr;
 	int socket_fd;
 	int result;
+	int file_size;
 	
 	if(argc != 2)
 	{
@@ -35,19 +36,28 @@ int main(int argc,char **argv)
 		exit(1);
 	}
 
-	char *str = "Test String";
-	if(FALSE == send(socket_fd, str , strlen(str) + 1, 0))
+	file_size = SendLocalFileStatus(socket_fd);
+	if(FALSE == file_size)
 	{
-	    ErrorReport(CLIENT_SEND_DATA_ERR);
 		exit(1);
 	}
 
-	// receive data
-	printf("Begin receiving data....\n");
-	result = ReceiveFileData(socket_fd);
-	if(FALSE == result)
+	if(file_size == 0)
 	{
-	    exit(1);
+		// receive data
+		printf("Begin receiving data....\n");
+		result = ReceiveFileData(socket_fd);
+		if(FALSE == result)
+		{
+		    exit(1);
+		}
+	}
+	else
+	{
+		if(FALSE == HandleDiffData(socket_fd, file_size))
+		{
+			exit(1);
+		}
 	}
 
 	// close socket
