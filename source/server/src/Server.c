@@ -58,6 +58,9 @@ int main(int argc,char **argv)
         printf("accepting client on fd %d\n", client_sockfd);
         // Check if need to send file.
 		ret = recv(client_sockfd, buf, MAX_LINE, 0);
+		if(strcmp(buf,"New file") == TRUE)
+		{
+		}
 		if(FALSE == ret)
         {
             ErrorReport(READ_SOCKET_ERR);
