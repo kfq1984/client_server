@@ -1,11 +1,11 @@
 
 #define INET_ADDR_STR_LEN   1024
-#define MAX_LINE 1024
-#define SERVER_PORT  9237
-#define TRUE         0
-#define FALSE        -1
-#define MAX_CONNECT_NUM    10
-#define MAX_BUFFER_SIZE    1024
+#define MAX_LINE            4096
+#define SERVER_PORT         9237
+#define TRUE                0
+#define FALSE               -1
+#define MAX_CONNECT_NUM     10
+
 
 
 

@@ -15,3 +15,5 @@
 #include <sys/time.h>
 #include <sys/ioctl.h>
 #include <fcntl.h>
+#include <zlib.h>
+#include <zconf.h>

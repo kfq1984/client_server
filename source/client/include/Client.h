@@ -10,3 +10,6 @@
 #include <fcntl.h>
 #include <openssl/md5.h>
 #include <sys/stat.h>
+#include <zlib.h>
+#include <zconf.h>
+

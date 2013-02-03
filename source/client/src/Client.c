@@ -49,7 +49,7 @@ int main(int argc,char **argv)
 	{
 	    exit(1);
 	}
-
+    printf("Data received");
 	// close socket
 	if(FALSE == close(socket_fd))
 	{

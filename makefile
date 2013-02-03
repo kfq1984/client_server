@@ -9,7 +9,7 @@ CC = gcc
 
 # define any compile-time flags
 CFLAGS = -Wall -g
-LIBS = -lcrypto -lssl
+LIBS = -lcrypto -lssl -lz
 
 # define any directories containing header filers other than /usr/include
 INCLUDES = -I./source/client/include -I./source/server/include

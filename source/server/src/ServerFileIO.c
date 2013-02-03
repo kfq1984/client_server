@@ -7,10 +7,13 @@ const char *filename = "test.txt";
 int SendFileData(int socket)
 {
 	int fd;
-	int write_length = 0;
+	int sendlength = 0;
 	int i;
-	int file_block_length = 0;
+	int filechunklength = 0;
 	char buf[MAX_LINE];
+	char compressedbuf[MAX_LINE];
+	int compresslength;
+	int result;
 
 	// Open the file
 	fd = open(filename, O_RDONLY);
@@ -19,59 +22,61 @@ int SendFileData(int socket)
 		ErrorReport(FILE_OPEN_ERR);
 		return FALSE;
 	}	
+	
+	bzero(buf, MAX_LINE);
+	filechunklength = read(fd, buf, MAX_LINE);
 
 	// Send the file, one chunk at a time
-	#if 0
-	do
-	{
-		// Get one chunk of the file from disk
-		nread = read(fd, buf, MAX_LINE);
-		if(nread == 0)
-		{
-			// All Done, close the file and the socket
-			close(fd);
-			close(socket);
-			break;
-		}
-
-		// Send the chunck
-		for(i = 0; i < nread; i+= nwrite)
-		{
-			// write might not take it all in one call, so we have to try until it's all written
-			nwrite = write(socket, buf + i, nread - i);
-			if(nwrite < 0)
-			{
-				ErrorReport(WRITE_SOCKET_ERR);
-				exit(1);
-			}
-		}
-	} while(1);
-	#endif
-	
-	do
+	while(filechunklength)
     {
-        bzero(buf, MAX_BUFFER_SIZE);
-		file_block_length = read(fd, buf, MAX_BUFFER_SIZE);
-        if(FALSE == file_block_length)
+        //bzero(buf, MAX_LINE);
+		//filechunklength = read(fd, buf, MAX_LINE);
+		printf("%d\n", filechunklength);
+        if(FALSE == filechunklength)
         {
             ErrorReport(FILE_READ_ERR);
 			return FALSE;
         }
+		compresslength = filechunklength;
+		
+		result = compress(compressedbuf, &compresslength, (const Bytef*)buf, filechunklength);
+		printf("%d\n", result);
+		printf("%d\n", compresslength);
+		#if 0
+		for(i = 0; i < filechunklength; i++)
+		{
+			printf("%x", buf[i]);
+			printf("%x\n", compressedbuf[i]);
+		}
+		#endif
+	
         //Send the chunck
-        for(i = 0; i < file_block_length; i += write_length)
+        for(i = 0; i < compresslength; i += sendlength)
         {
-            write_length = send(socket, buf + i, file_block_length - i, 0);
-	        if(FALSE == write_length)
+            sendlength = send(socket, compressedbuf + i, compresslength - i, 0);
+	        if(FALSE == sendlength)
 	        {
 	            ErrorReport(FILE_SEND_ERR);
 				return FALSE;
 	        }
         }
-    }while(file_block_length);                
+		bzero(buf, MAX_LINE);
+	    filechunklength = read(fd, buf, MAX_LINE);
+    }//while(filechunklength);                
     close(fd);
            
    return TRUE;
         
 }
 
+int MD5Check(int client_fd, int md5_num)
+{
+	char buf[MAX_LINE];
+	return 0;
+}
 
+int FileCompress()
+{
+	
+	return 0;
+}
