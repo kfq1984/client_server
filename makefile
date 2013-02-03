@@ -9,6 +9,7 @@ CC = gcc
 
 # define any compile-time flags
 CFLAGS = -Wall -g
+LIBS = -lcrypto -lssl
 
 # define any directories containing header filers other than /usr/include
 INCLUDES = -I./source/client/include -I./source/server/include
@@ -33,10 +34,10 @@ SERVER_OBJS = $(SERVER_SRCS:.c=.o)
 all: client server
 
 client: $(CLIENT_OBJS)
-	$(CC) $(CFLAGS) $(INCLUDES) -o client $(CLIENT_OBJS)
+	$(CC) $(CFLAGS) $(INCLUDES) $(LIBS) -o client $(CLIENT_OBJS) 
 
 server: $(SERVER_OBJS)
-	$(CC) $(CFLAGS) $(INCLUDES) -o server $(SERVER_OBJS)
+	$(CC) $(CFLAGS) $(INCLUDES) $(LIBS) -o server $(SERVER_OBJS)
 
 # this is a suffix replacement rule for building .o's from .c's
 .c.o:
