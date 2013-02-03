@@ -40,7 +40,13 @@ void ErrorReport(int errcode)
 
 		case FILE_WRITE_ERR:
 		{
-			perror("fail to open file");
+			perror("fail to write file");
+			break;
+		}
+
+		case FILE_READ_ERR:
+		{
+			perror("fail to read file");
 			break;
 		}
 		
