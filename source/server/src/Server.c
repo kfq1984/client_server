@@ -57,7 +57,7 @@ int main(int argc,char **argv)
         
         printf("accepting client on fd %d\n", client_sockfd);
         // Check if need to send file.
-		ret = read(client_sockfd, buf, MAX_LINE);
+		ret = recv(client_sockfd, buf, MAX_LINE, 0);
 		if(FALSE == ret)
         {
             ErrorReport(READ_SOCKET_ERR);
@@ -76,7 +76,13 @@ int main(int argc,char **argv)
 		{
 			// This is the client process: sending file
 			close(server_sockfd);
-			SendFileData(client_sockfd);
+			result = SendFileData(client_sockfd);
+			if(FALSE == result)
+			{
+			    ErrorReport(FILE_SEND_ERR);
+				exit(1);
+			}
+			printf("File Transfer Finished\n");
 			exit(0);
 		}
 		else

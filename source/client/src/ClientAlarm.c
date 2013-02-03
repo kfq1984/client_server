@@ -37,6 +37,12 @@ void ErrorReport(int errcode)
 			perror("fail to open file");
 			break;
 		}
+
+		case FILE_WRITE_ERR:
+		{
+			perror("fail to open file");
+			break;
+		}
 		
 		default:
 		{
