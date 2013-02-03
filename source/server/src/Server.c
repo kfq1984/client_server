@@ -1,3 +1,8 @@
+/*
+ *This c file is main function of server.
+ */
+ 
+
 #include "Server.h"
 #include "ServerFunc.h"
 #include "ServerMacro.h"
@@ -9,34 +14,32 @@ int main(int argc,char **argv)
     int server_sockfd, client_sockfd;
     socklen_t server_len, client_len;
     int result;
-	int md5_num;
+	char buf[MAX_LINE];
+	int pid;
 
-	//  Create and name a socket for the server.
-	
 
-    if(FALSE == (server_sockfd = socket(AF_INET,SOCK_STREAM,0)))
+	//  Create a socket for the server.
+	if(FALSE == (server_sockfd = socket(AF_INET,SOCK_STREAM,0)))
     {
-        // Create socket failed, report error
+        // Create socket failed, error report
         ErrorReport(GET_SOCKET_ERR);
         exit(1);
     }
-
+	// Fill socket information
     server_addr.sin_family = AF_INET;
     server_addr.sin_addr.s_addr = htonl(INADDR_ANY);
     server_addr.sin_port = htons(SERVER_PORT);
     server_len = sizeof(server_addr);
 
 	// Socket bind
-
     if(FALSE == (bind(server_sockfd,(struct sockaddr *)&server_addr ,sizeof(server_addr)))) 
     {
-        // Socket bind failed, report error
+        // Socket bind failed, error report 
         ErrorReport(SOCKET_BIND_ERR);
         exit(1);
     }
 
 	// Create a connection queue and initialize readfds to handle input from server_sockfd.
-
     if(FALSE == listen(server_sockfd, MAX_CONNECT_NUM))
     {
     	// Listen failed, report error
@@ -44,25 +47,29 @@ int main(int argc,char **argv)
 		exit(1);
     }
 
+	// Compress file
+	result = FileCompress();
+	if(FALSE == result)
+	{
+		// Compress file fail, error report happened in FileCompress function, just exit here
+	    exit(1);
+	}
+
+
 	//  Now wait for clients and requests.
     while(1) 
 	{
-        char buf[MAX_LINE];
-		int pid;
-        int ret;
-
-        printf("server waiting......\n");
-        
+		// Accept a client
+		printf("server waiting......\n");
         client_len = sizeof(client_addr);
         client_sockfd = accept(server_sockfd, (struct sockaddr *)&client_addr, &client_len);
         
         printf("accepting client on fd %d\n", client_sockfd);
-        // Check if need to send file.
-		ret = recv(client_sockfd, buf, MAX_LINE, 0);
-
-		if(FALSE == ret)
+        // Receive information from client, that means client is ready to receive data
+		result = recv(client_sockfd, buf, MAX_LINE, 0);
+		if(FALSE == result)
         {
-            ErrorReport(READ_SOCKET_ERR);
+            ErrorReport(RECV_SOCKET_ERR);
             exit(1);
         }
 		printf("serving client on fd %d\n", client_sockfd);
@@ -71,49 +78,17 @@ int main(int argc,char **argv)
 		pid = fork();
 		if(pid < 0)
 		{
+			// Create child process fail, error report
 			ErrorReport(FORK_ERR);
 			exit(1);
 		}
 		else if(pid == 0)
 		{
-		#if 0
-			close(server_sockfd);
-	        if(strcmp(buf,"New file") == TRUE)
-			{
-				// This is the client process: sending file
-				
-				result = SendFileData(client_sockfd);
-				if(FALSE == result)
-				{
-				    ErrorReport(FILE_SEND_ERR);
-					exit(1);
-				}
-				printf("File Transfer Finished\n");
-				exit(0);
-			}
-			else
-			{
-			    md5_num = buf[0];
-				if(FALSE == send(client_sockfd, TRUE, 1))
-		        {
-		            ErrorReport(FILE_SEND_ERR);
-					return FALSE;
-		        };
-				ret = Md5Check(client_sockfd, md5_num);
-				if(FALSE == ret)
-		        {
-		            ErrorReport(READ_SOCKET_ERR);
-		            exit(1);
-		        }
-				
-			}
-		#endif
-			// This is the client process: sending file
-			
+			// Send compressed file to client
 			result = SendFileData(client_sockfd);
 			if(FALSE == result)
 			{
-			    ErrorReport(FILE_SEND_ERR);
+				// Send file error, error report happened in SendFileData function, just exit here
 				exit(1);
 			}
 			printf("File Transfer Finished\n");
@@ -121,7 +96,12 @@ int main(int argc,char **argv)
 		}
 		else
 		{
-			close(client_sockfd);
+			if(FALSE == close(client_sockfd))
+			{
+				// Close socket err, error report
+				ErrorReport(CLOSE_SOCKET_ERR);
+				exit(1);
+			}
 		}
 
     }

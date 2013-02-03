@@ -1,4 +1,7 @@
-
+/*
+ * This head file include all the functions in server application.
+ */
+ 
 void ErrorReport(int errcode);
 int SendFileData(int client_fd);
-int MD5Check(int client_fd, int md5_num);
+int FileCompress(void);

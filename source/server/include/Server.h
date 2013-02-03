@@ -1,6 +1,7 @@
 /*
+ *This head file includes common head file of server.
+ */
 
-*/
 
 #include <stdio.h>
 #include <string.h>
