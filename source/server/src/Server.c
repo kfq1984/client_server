@@ -16,6 +16,7 @@ int main(int argc,char **argv)
     int result;
 	char buf[MAX_LINE];
 	int pid;
+	int opt = 1;
 
 
 	//  Create a socket for the server.
@@ -30,6 +31,9 @@ int main(int argc,char **argv)
     server_addr.sin_addr.s_addr = htonl(INADDR_ANY);
     server_addr.sin_port = htons(SERVER_PORT);
     server_len = sizeof(server_addr);
+	
+	// Reuse same port 
+	setsockopt(server_sockfd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
 
 	// Socket bind
     if(FALSE == (bind(server_sockfd,(struct sockaddr *)&server_addr ,sizeof(server_addr)))) 
@@ -84,6 +88,7 @@ int main(int argc,char **argv)
 		}
 		else if(pid == 0)
 		{
+			close(server_sockfd);
 			// Send compressed file to client
 			result = SendFileData(client_sockfd);
 			if(FALSE == result)
@@ -91,7 +96,13 @@ int main(int argc,char **argv)
 				// Send file error, error report happened in SendFileData function, just exit here
 				exit(1);
 			}
-			printf("File Transfer Finished\n");
+
+			if(FALSE == close(client_sockfd))
+			{
+				// Close socket err, error report
+				ErrorReport(CLOSE_SOCKET_ERR);
+				exit(1);
+			}
 			exit(0);
 		}
 		else
