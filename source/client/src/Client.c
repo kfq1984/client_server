@@ -102,6 +102,6 @@ int main(int argc,char **argv)
 		ErrorReport(CLOSE_SOCKET_ERR);
 		exit(1);
 	}
-	
+
 	return 0;
 }

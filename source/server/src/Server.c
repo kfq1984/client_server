@@ -114,6 +114,7 @@ int main(int argc,char **argv)
 					// Send fail, exit
 					exit(1);
 				}
+				printf("processing done");
 				if(FALSE == close(client_sockfd))
 				{
 					// Close socket err, error report

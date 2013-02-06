@@ -11,7 +11,7 @@
 // Global variable
 
 //const char *originalfilename = "test.txt";
-const char *originalfilename = "test.doc";
+const char *originalfilename = "test.txt";
 const char *compressedfilename = "test.gz";
 const char *no_file = "local file not exist!";
 unsigned char *bitmap_buf;
@@ -175,6 +175,7 @@ int ReceiveFileStatus(int socket)
 	int bitindex = 7;
 	int result;
 	char updateind = 0;
+	int MD5_length;
 
 	// Get file size
 	file_size = GetFileSize(originalfilename);
@@ -217,7 +218,8 @@ int ReceiveFileStatus(int socket)
 	{
 		// If file needs update, check MD5 value and compose bitmap 
 		
-		int MD5_length = (int)recvbuf[0];
+		//MD5_length = (recvbuf[0] | (recvbuf[1] << 8) | (recvbuf[2] << 16) | (recvbuf[3] << 24));
+		MD5_length = atoi(recvbuf);
 		printf("Received MD5 length = %d\n", MD5_length);
 		
 		printf("Send bitmap length....\n");
@@ -291,6 +293,7 @@ int ReceiveFileStatus(int socket)
 
 		// Send bitmap information
 		printf("Send bitmap information....\n");
+		printf("%d", *bitmap_buf);
 		sendlength = send(socket, bitmap_buf, bitmaplength + 1, 0);
 		if(FALSE == sendlength)
 		{

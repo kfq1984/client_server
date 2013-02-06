@@ -9,10 +9,9 @@
 
 // Global variable
 //const char *clientfilename = "client.txt";
-const char *clientfilename = "client.doc";
-
+const char *clientfilename = "client.txt";
 const char *compressedfilename = "client.gz";
-const char *bitmap = "bitmap.bit";
+const char *bitmap = "bitmap";
 const char *no_file = "local file not exist!";
 int bitmaplength;
 
@@ -190,7 +189,8 @@ int SendLocalFileStatus(int socket)
 		// Send MD5 length
 		int md5datalength = ((file_size / MAX_LINE) + 1) * 16;
 		printf("Begin to send MD5 data length, md5datalength = %d\n", md5datalength);
-		if(FALSE == send(socket, &md5datalength , sizeof(int), 0))
+		sprintf(data_buf, "%d", md5datalength);
+		if(FALSE == send(socket, data_buf , strlen(data_buf) + 1, 0))
 		{
 		    ErrorReport(SEND_DATA_ERR);
 			return FALSE;
@@ -285,7 +285,7 @@ int ReceiveBitmapData(int socket)
 		close(fb);
 		return FALSE;
 	}
-	printf("%d\n", readlength);
+	printf("%d\n", *data_buf);
 	writelength = write(fb, data_buf, readlength);
 	if(FALSE == writelength)
 	{
@@ -399,7 +399,7 @@ int ReceiveFileUpdate(int socket)
 	close(fb);
 	close(fd);
 	// Update finish, remove bitmap file
-	remove(bitmap);
+	//remove(bitmap);
 	
 	return TRUE;
 }
