@@ -39,6 +39,13 @@ void ErrorReport(int errcode)
 			perror("fail to receive data");
 			break;
 		}
+
+		// Send data error
+		case SEND_DATA_ERR:
+		{
+			perror("fail to send data");
+			break;
+		}
 		
 		// Close socket error
 		case CLOSE_SOCKET_ERR:

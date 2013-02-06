@@ -7,8 +7,19 @@
 #include "ServerFunc.h"
 #include "ServerMacro.h"
 
-const char *originalfilename = "test.txt";
+
+// Global variable
+
+//const char *originalfilename = "test.txt";
+const char *originalfilename = "test.doc";
 const char *compressedfilename = "test.gz";
+const char *no_file = "local file not exist!";
+unsigned char *bitmap_buf;
+int bitmaplength;
+
+
+
+
 
 /*-----------------------------------------------------
  *function name: SendFileData
@@ -121,6 +132,237 @@ int FileCompress(void)
     }  
     close(fd);
 	gzclose(fc);
+	
+	return TRUE;
+}
+
+/*-----------------------------------------------------
+ *function name: GetFileSize
+ *input:             file name
+ *output:           file size
+ *This function get the file size
+ *-----------------------------------------------------
+ */
+
+int GetFileSize(const char *file_name) 
+{
+       struct stat buf;
+       if (stat(file_name, &buf) != 0 ) 
+       		return 0;
+       return( buf.st_size );
+}
+
+/*------------------------------------------------------------------
+ *function name: ReceiveFileStatus
+ *input:             socket descriptor
+ *output:           file status  1 - no file in client, 0 -file needs update, -1 - error
+ *This function receive local file status: 
+ * If no file or file is small, send whole file to client
+ * If file needs update, check MD5 and compose bitmap information
+ *------------------------------------------------------------------
+ */
+
+int ReceiveFileStatus(int socket)
+{
+	int fd;
+	int i,j;
+	int readlength, recvlength, sendlength;
+	char buf[MAX_LINE];
+	char recvbuf[MAX_LINE];
+	int file_size;
+	char md5buf[16];
+	int bitmapindex = 0;
+	int bitindex = 7;
+	int result;
+	char updateind = 0;
+
+	// Get file size
+	file_size = GetFileSize(originalfilename);
+	printf("File size = %u\n", file_size);
+	// Calculate bitmap length
+	bitmaplength = ((file_size / MAX_LINE) / 8) + 1;
+	printf("bitmaplength is %d\n", bitmaplength);
+	bitmap_buf = malloc(bitmaplength);
+	memset(bitmap_buf, bitmaplength, 0);
+	
+
+	// Open the file
+	fd = open(originalfilename, O_RDONLY);
+	if(fd < 0)
+	{
+		// Open file fail, error report
+		ErrorReport(FILE_OPEN_ERR);
+		free(bitmap_buf);
+		return FALSE;
+	}
+	
+	// Get file status
+	bzero(recvbuf, MAX_LINE);
+	recvlength = recv(socket, recvbuf, MAX_LINE, 0);
+	if(TRUE== (strcmp(recvbuf, no_file)))
+	{
+		printf("Send the whole file...\n");
+		// If no file or file is small, send whole compressed file
+		result = SendFileData(socket);
+		if(FALSE == result)
+		{
+			// Send file error, error report happened in SendFileData function, just exit here
+			free(bitmap_buf);
+			return FALSE;
+		}
+		
+		return 1;
+	}
+	else
+	{
+		// If file needs update, check MD5 value and compose bitmap 
+		
+		int MD5_length = (int)recvbuf[0];
+		printf("Received MD5 length = %d\n", MD5_length);
+		
+		printf("Send bitmap length....\n");
+		sendlength = send(socket, &bitmaplength, sizeof(int), 0);
+		if(FALSE == sendlength)
+		{
+			ErrorReport(SEND_DATA_ERR);
+			free(bitmap_buf);
+			return FALSE;
+		}
+		
+		// Begin to receive MD5 data, once a chunk
+		printf("Begin to receive MD5 data....\n");
+		bzero(recvbuf, MAX_LINE);
+		recvlength = recv(socket, recvbuf, MAX_LINE, 0);
+		while(recvlength)
+		{
+			printf("Begin to check MD5 diff.... recvlength = %d\n", recvlength);
+			if(FALSE == recvlength)
+			{
+				// Receive MD5 value fail, error report, close files
+				ErrorReport(RECV_DATA_ERR);
+				close(fd);
+				free(bitmap_buf);
+				return FALSE;
+			}
+			
+			for( i = 0; i < (recvlength / 16); i++)
+			{
+				// Read file content
+				readlength = read(fd, buf, MAX_LINE);
+				if(FALSE == readlength)
+				{
+					// read original file fail, error report, close files
+					ErrorReport(FILE_READ_ERR);
+					close(fd);
+					free(bitmap_buf);
+					return FALSE;
+				}
+				
+				// Calculate MD5 and check value
+				MD5((unsigned char*)buf, readlength, (unsigned char*)md5buf);
+				for(j = 0; j < 16; j++)
+				{
+					if(md5buf[j] != recvbuf[j + (i * 16)])
+					{	
+						// If MD5 mismatch, record in bitmap
+						updateind = 1;
+						*(bitmap_buf + bitmapindex) |= (0x1<<bitindex); 
+						break;
+					}
+				}
+				
+				bitindex -= 1;
+				if(0 == bitindex)
+				{
+					bitindex = 7;
+					bitmapindex++;
+				}				
+			}
+			// Fresh buffer, receive new chunk
+			bzero(recvbuf, MAX_LINE);
+			// If get enough MD5 data, break;
+			if((MD5_length - recvlength) == 0)
+			{
+				printf("Receive enough MD5 Data\n");
+				break;
+			}
+			recvlength = recv(socket, recvbuf, MAX_LINE, 0);
+		}
+
+		// Send bitmap information
+		printf("Send bitmap information....\n");
+		sendlength = send(socket, bitmap_buf, bitmaplength + 1, 0);
+		if(FALSE == sendlength)
+		{
+			ErrorReport(SEND_DATA_ERR);
+			close(fd);
+			free(bitmap_buf);
+			return FALSE;
+		}
+		close(fd);
+		return TRUE;
+	}
+}
+
+/*---------------------------------------------
+ *function name: SendUpdateData
+ *input:             socket descriptor
+ *output:           status  0 - success, -1 - error
+ *This function send file chunks need be updated
+ *---------------------------------------------
+ */
+
+int SendUpdateData(int socket)
+{
+	int fd;
+	int i,j;
+	int readlength, sendlength;
+	char buf[MAX_LINE];
+	char updatestatus = 0;
+
+	// Open file
+	fd = open(originalfilename, O_RDONLY);
+	if(fd < 0)
+	{
+		// Open file fail, error report
+		ErrorReport(FILE_OPEN_ERR);
+		free(bitmap_buf);
+		return FALSE;
+	}
+
+	// Get bitmap information, decide which chunk needs be sent
+	printf("Send update data....\n");
+	for(i = 0; i < bitmaplength; i++)
+	{
+		for(j = 7; j >= 0; j--)
+		{
+			updatestatus = (*(bitmap_buf + i)>>j) & 0x1;
+			if(updatestatus == 1)
+			{
+				lseek(fd, ((i * 8) + (7 - j))* MAX_LINE, SEEK_SET);
+				readlength = read(fd, buf, MAX_LINE);
+				if(FALSE == readlength)
+				{
+					// read original file fail, error report, close files
+					ErrorReport(FILE_READ_ERR);
+					close(fd);
+					free(bitmap_buf);
+					return FALSE;
+				}
+				sendlength = send(socket, buf, readlength, 0);
+				if(FALSE == sendlength)
+				{
+					ErrorReport(SEND_DATA_ERR);
+					close(fd);
+					free(bitmap_buf);
+					return FALSE;
+				}
+			}
+			
+		}
+	}
+	free(bitmap_buf);
+	close(fd);
 	
 	return TRUE;
 }

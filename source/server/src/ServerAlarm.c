@@ -42,9 +42,16 @@ void ErrorReport(int errcode)
 		}
 
 		// Receive data error
-		case RECV_SOCKET_ERR:
+		case RECV_DATA_ERR:
 		{
-			perror("fail to read");
+			perror("fail to receive data");
+			break;
+		}
+		
+		// Send data error
+		case SEND_DATA_ERR:
+		{
+			perror("fail to send data");
 			break;
 		}
 		

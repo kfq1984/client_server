@@ -4,10 +4,11 @@
 
 
 /*General macro define*/ 
-#define MAX_LINE 4096
-#define SERVER_PORT  9237
-#define TRUE         0
-#define FALSE        -1
+#define MAX_BUFFER_SIZE      			4096
+#define MAX_LINE 						4096
+#define SERVER_PORT  					9237
+#define TRUE         					0
+#define FALSE        					-1
 
 /*Error code define*/
 #define GET_SOCKET_ERR                  1001

@@ -13,7 +13,8 @@ int main(int argc,char **argv)
 	struct sockaddr_in server_sockaddr;
 	int socket_fd;
 	int result;
-	char *str = "Test String";
+	int filelength;
+
 
 	// Get server address
 	if(argc != 2)
@@ -45,33 +46,55 @@ int main(int argc,char **argv)
 		ErrorReport(CLIENT_CONNECT_ERR);
 		exit(1);
 	}
-
-	// Send a test information to sever
-	if(FALSE == send(socket_fd, str , strlen(str) + 1, 0))
+	
+	// Send file status to server, no file or file md5 value
+	filelength = SendLocalFileStatus(socket_fd);
+	if(FALSE == filelength)
 	{
-		// Send information fail, error report
-	    ErrorReport(SEND_DATA_ERR);
+		//Send file status fail, error report happened in SendLocalFileStatus, just exit
 		exit(1);
 	}
-
-	// Receive data from server
-	printf("Begin receiving data....\n");
-	result = ReceiveFileData(socket_fd);
-	if(FALSE == result)
+	else if(filelength < MAX_LINE)
 	{
-		// Receive data fail, error report happened in ReceiveFileData function, just exit here
-	    exit(1);
+		// If there is no file exist, server will send whole file directly
+		// Receive data from server
+		printf("Begin receiving data....\n");
+		result = ReceiveFileData(socket_fd);
+		if(FALSE == result)
+		{
+			// Receive data fail, error report happened in ReceiveFileData function, just exit here
+		    exit(1);
+		}
+		
+		// Decompress file, get the original file copy
+		result = FileDecompress();
+		if(FALSE == result)
+		{
+			// Decompress file fail, error report happened in FileDecompress function, just exit here
+		    exit(1);
+		}	    
 	}
-	printf("Data received\n");
+	else
+	{	
+		// If the file needs update, client receive the bitmap information and update file 
+		// Receive bitmap information from server
+		printf("Begin receiving bitmap....\n");
+		result = ReceiveBitmapData(socket_fd);
+		if(FALSE == result)
+		{
+			// Receive data fail, error report happened in ReceiveBitmapData function, just exit here
+		    exit(1);
+		}
+		
+		// Receive file updata chunks, updata file 
+		result = ReceiveFileUpdate(socket_fd);
+		if(FALSE == result)
+		{
+			// Decompress file fail, error report happened in ReceiveFileUpdata function, just exit here
+		    exit(1);
+		}  
+	}
 
-	// Decompress file, get the original file copy
-	result = FileDecompress();
-	if(FALSE == result)
-	{
-		// Decompress file fail, error report happened in FileDecompress function, just exit here
-	    exit(1);
-	}
-    
 	// Close socket
 	if(FALSE == close(socket_fd))
 	{
@@ -79,5 +102,6 @@ int main(int argc,char **argv)
 		ErrorReport(CLOSE_SOCKET_ERR);
 		exit(1);
 	}
+	
 	return 0;
 }

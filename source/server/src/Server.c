@@ -7,6 +7,9 @@
 #include "ServerFunc.h"
 #include "ServerMacro.h"
 
+
+
+
 int main(int argc,char **argv)
 {
     struct sockaddr_in server_addr;
@@ -17,6 +20,7 @@ int main(int argc,char **argv)
 	char buf[MAX_LINE];
 	int pid;
 	int opt = 1;
+
 
 
 	//  Create a socket for the server.
@@ -67,18 +71,7 @@ int main(int argc,char **argv)
 		printf("server waiting......\n");
         client_len = sizeof(client_addr);
         client_sockfd = accept(server_sockfd, (struct sockaddr *)&client_addr, &client_len);
-        
-        printf("accepting client on fd %d\n", client_sockfd);
-        // Receive information from client, that means client is ready to receive data
-		result = recv(client_sockfd, buf, MAX_LINE, 0);
-		if(FALSE == result)
-        {
-            ErrorReport(RECV_SOCKET_ERR);
-            exit(1);
-        }
-		printf("serving client on fd %d\n", client_sockfd);
-
-		// create child process to send file
+        // create child process to send file
 		pid = fork();
 		if(pid < 0)
 		{
@@ -89,21 +82,45 @@ int main(int argc,char **argv)
 		else if(pid == 0)
 		{
 			close(server_sockfd);
-			// Send compressed file to client
-			result = SendFileData(client_sockfd);
+	        printf("accepting client on fd %d\n", client_sockfd);
+	        // Receive file status from client, decide how to transfer file
+			result = ReceiveFileStatus(client_sockfd);
 			if(FALSE == result)
+	        {	
+	        	// Receive file status fail, exit
+	            exit(1);
+	        }
+			else if(1 == result)
 			{
-				// Send file error, error report happened in SendFileData function, just exit here
-				exit(1);
+				// No file or file is too small, send whole compressed file
+				exit(0);
 			}
-
-			if(FALSE == close(client_sockfd))
+			else
 			{
-				// Close socket err, error report
-				ErrorReport(CLOSE_SOCKET_ERR);
-				exit(1);
+				//Server send file update bitmap, get the ACK and send data update
+				// Send compressed file to client
+				result = recv(client_sockfd, buf, MAX_LINE, 0);
+				if(FALSE == result)
+				{
+					// Receive ACK error, free memory, error report
+					ErrorReport(RECV_DATA_ERR);
+					free(bitmap_buf);
+					exit(1);
+				}
+				// Send file update chunks
+				result = SendUpdateData(client_sockfd);
+				if(FALSE == result)
+				{
+					// Send fail, exit
+					exit(1);
+				}
+				if(FALSE == close(client_sockfd))
+				{
+					// Close socket err, error report
+					ErrorReport(CLOSE_SOCKET_ERR);
+					exit(1);
+				}
 			}
-			exit(0);
 		}
 		else
 		{
@@ -116,4 +133,5 @@ int main(int argc,char **argv)
 		}
 
     }
+	exit(0);
 }
