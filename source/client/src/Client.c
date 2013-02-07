@@ -94,7 +94,7 @@ int main(int argc,char **argv)
 		    exit(1);
 		}  
 	}
-
+	printf("processing done\n");
 	// Close socket
 	if(FALSE == close(socket_fd))
 	{

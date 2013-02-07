@@ -399,7 +399,7 @@ int ReceiveFileUpdate(int socket)
 	close(fb);
 	close(fd);
 	// Update finish, remove bitmap file
-	//remove(bitmap);
+	remove(bitmap);
 	
 	return TRUE;
 }

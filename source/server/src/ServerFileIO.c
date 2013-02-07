@@ -175,11 +175,14 @@ int ReceiveFileStatus(int socket)
 	int bitindex = 7;
 	int result;
 	char updateind = 0;
-	int MD5_length;
+	int clientmd5length, restmd5length;
+	int serverchunknum;
 
 	// Get file size
 	file_size = GetFileSize(originalfilename);
 	printf("File size = %u\n", file_size);
+	serverchunknum = (file_size / MAX_LINE) + 1;
+	printf("Server chunk num = %d\n", serverchunknum);
 	// Calculate bitmap length
 	bitmaplength = ((file_size / MAX_LINE) / 8) + 1;
 	printf("bitmaplength is %d\n", bitmaplength);
@@ -219,8 +222,9 @@ int ReceiveFileStatus(int socket)
 		// If file needs update, check MD5 value and compose bitmap 
 		
 		//MD5_length = (recvbuf[0] | (recvbuf[1] << 8) | (recvbuf[2] << 16) | (recvbuf[3] << 24));
-		MD5_length = atoi(recvbuf);
-		printf("Received MD5 length = %d\n", MD5_length);
+		clientmd5length = atoi(recvbuf);
+		restmd5length = clientmd5length;
+		printf("Received MD5 length = %d\n", clientmd5length);
 		
 		printf("Send bitmap length....\n");
 		sendlength = send(socket, &bitmaplength, sizeof(int), 0);
@@ -282,15 +286,28 @@ int ReceiveFileStatus(int socket)
 			}
 			// Fresh buffer, receive new chunk
 			bzero(recvbuf, MAX_LINE);
-			// If get enough MD5 data, break;
-			if((MD5_length - recvlength) == 0)
+			// If get enough MD5 data, break
+			restmd5length -= recvlength;
+			if(restmd5length == 0)
 			{
 				printf("Receive enough MD5 Data\n");
 				break;
 			}
 			recvlength = recv(socket, recvbuf, MAX_LINE, 0);
 		}
-
+		
+		// If file in server > file in client, rest of bitmap should be 1
+		for(i = ((clientmd5length / 16) + 1); i <= serverchunknum; i++)
+		{
+			*(bitmap_buf + bitmapindex) |= (0x1<<bitindex); 
+			bitindex -= 1;
+			if(0 == bitindex)
+			{
+				bitindex = 7;
+				bitmapindex++;
+			}
+		}		
+		
 		// Send bitmap information
 		printf("Send bitmap information....\n");
 		printf("%d", *bitmap_buf);
@@ -302,7 +319,7 @@ int ReceiveFileStatus(int socket)
 			free(bitmap_buf);
 			return FALSE;
 		}
-		close(fd);
+		close(fd);	
 		return TRUE;
 	}
 }

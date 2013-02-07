@@ -121,7 +121,9 @@ int main(int argc,char **argv)
 					ErrorReport(CLOSE_SOCKET_ERR);
 					exit(1);
 				}
+				exit(0);
 			}
+			
 		}
 		else
 		{
@@ -134,5 +136,4 @@ int main(int argc,char **argv)
 		}
 
     }
-	exit(0);
 }
