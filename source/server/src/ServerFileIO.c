@@ -14,6 +14,7 @@
 const char *originalfilename = "test.txt";
 const char *compressedfilename = "test.gz";
 const char *no_file = "local file not exist!";
+const char *md5 = "md5";
 unsigned char *bitmap_buf;
 int bitmaplength;
 
@@ -164,7 +165,7 @@ int GetFileSize(const char *file_name)
 
 int ReceiveFileStatus(int socket)
 {
-	int fd;
+	int fd, fm;
 	int i,j;
 	int readlength, recvlength, sendlength;
 	char buf[MAX_LINE];
@@ -187,9 +188,9 @@ int ReceiveFileStatus(int socket)
 	bitmaplength = ((file_size / MAX_LINE) / 8) + 1;
 	printf("bitmaplength is %d\n", bitmaplength);
 	bitmap_buf = malloc(bitmaplength);
-	memset(bitmap_buf, bitmaplength, 0);
-	
+	bzero(bitmap_buf, bitmaplength);
 
+	fm = open(md5, O_RDWR | O_CREAT);
 	// Open the file
 	fd = open(originalfilename, O_RDONLY);
 	if(fd < 0)
@@ -239,8 +240,11 @@ int ReceiveFileStatus(int socket)
 		printf("Begin to receive MD5 data....\n");
 		bzero(recvbuf, MAX_LINE);
 		recvlength = recv(socket, recvbuf, MAX_LINE, 0);
+		int fr = open("recvmd5", O_RDWR | O_CREAT);
+		write(fr, recvbuf, recvlength);
 		while(recvlength)
 		{
+
 			printf("Begin to check MD5 diff.... recvlength = %d\n", recvlength);
 			if(FALSE == recvlength)
 			{
@@ -266,23 +270,25 @@ int ReceiveFileStatus(int socket)
 				
 				// Calculate MD5 and check value
 				MD5((unsigned char*)buf, readlength, (unsigned char*)md5buf);
+				write(fm, md5buf, 16);
+
 				for(j = 0; j < 16; j++)
 				{
 					if(md5buf[j] != recvbuf[j + (i * 16)])
 					{	
 						// If MD5 mismatch, record in bitmap
-						updateind = 1;
 						*(bitmap_buf + bitmapindex) |= (0x1<<bitindex); 
 						break;
 					}
+					
 				}
 				
 				bitindex -= 1;
-				if(0 == bitindex)
+				if(-1 == bitindex)
 				{
 					bitindex = 7;
 					bitmapindex++;
-				}				
+				}
 			}
 			// Fresh buffer, receive new chunk
 			bzero(recvbuf, MAX_LINE);
@@ -301,7 +307,7 @@ int ReceiveFileStatus(int socket)
 		{
 			*(bitmap_buf + bitmapindex) |= (0x1<<bitindex); 
 			bitindex -= 1;
-			if(0 == bitindex)
+			if(-1 == bitindex)
 			{
 				bitindex = 7;
 				bitmapindex++;
@@ -310,8 +316,11 @@ int ReceiveFileStatus(int socket)
 		
 		// Send bitmap information
 		printf("Send bitmap information....\n");
-		printf("%d", *bitmap_buf);
-		sendlength = send(socket, bitmap_buf, bitmaplength + 1, 0);
+		for(i = 0; i < bitmaplength ; i++)
+		{
+			printf("0x%x", *(bitmap_buf + i));
+		}
+		sendlength = send(socket, bitmap_buf, bitmaplength, 0);
 		if(FALSE == sendlength)
 		{
 			ErrorReport(SEND_DATA_ERR);
@@ -319,7 +328,9 @@ int ReceiveFileStatus(int socket)
 			free(bitmap_buf);
 			return FALSE;
 		}
-		close(fd);	
+		close(fd);
+		close(fm);
+		close(fr);
 		return TRUE;
 	}
 }
@@ -370,6 +381,7 @@ int SendUpdateData(int socket)
 					return FALSE;
 				}
 				sendlength = send(socket, buf, readlength, 0);
+				printf("sendlength = %d\n", sendlength);
 				if(FALSE == sendlength)
 				{
 					ErrorReport(SEND_DATA_ERR);
