@@ -165,32 +165,28 @@ int GetFileSize(const char *file_name)
 
 int ReceiveFileStatus(int socket)
 {
-	int fd, fm;
+	int fd;
 	int i,j;
 	int readlength, recvlength, sendlength;
 	char buf[MAX_LINE];
 	char recvbuf[MAX_LINE];
-	int file_size;
+	unsigned long long file_size;
 	char md5buf[16];
 	int bitmapindex = 0;
 	int bitindex = 7;
 	int result;
-	char updateind = 0;
 	int clientmd5length, restmd5length;
 	int serverchunknum;
 
 	// Get file size
 	file_size = GetFileSize(originalfilename);
-	printf("File size = %u\n", file_size);
+	printf("File size = %llu\n", file_size);
 	serverchunknum = (file_size / MAX_LINE) + 1;
-	printf("Server chunk num = %d\n", serverchunknum);
 	// Calculate bitmap length
 	bitmaplength = ((file_size / MAX_LINE) / 8) + 1;
-	printf("bitmaplength is %d\n", bitmaplength);
 	bitmap_buf = malloc(bitmaplength);
 	bzero(bitmap_buf, bitmaplength);
 
-	fm = open(md5, O_RDWR | O_CREAT);
 	// Open the file
 	fd = open(originalfilename, O_RDONLY);
 	if(fd < 0)
@@ -222,13 +218,12 @@ int ReceiveFileStatus(int socket)
 	{
 		// If file needs update, check MD5 value and compose bitmap 
 		
-		//MD5_length = (recvbuf[0] | (recvbuf[1] << 8) | (recvbuf[2] << 16) | (recvbuf[3] << 24));
 		clientmd5length = atoi(recvbuf);
 		restmd5length = clientmd5length;
-		printf("Received MD5 length = %d\n", clientmd5length);
 		
-		printf("Send bitmap length....\n");
-		sendlength = send(socket, &bitmaplength, sizeof(int), 0);
+		printf("Send file size....\n");
+		sprintf(buf, "%llu", file_size);
+		sendlength = send(socket, buf, strlen(buf) + 1, 0);
 		if(FALSE == sendlength)
 		{
 			ErrorReport(SEND_DATA_ERR);
@@ -240,12 +235,9 @@ int ReceiveFileStatus(int socket)
 		printf("Begin to receive MD5 data....\n");
 		bzero(recvbuf, MAX_LINE);
 		recvlength = recv(socket, recvbuf, MAX_LINE, 0);
-		int fr = open("recvmd5", O_RDWR | O_CREAT);
-		write(fr, recvbuf, recvlength);
 		while(recvlength)
 		{
 
-			printf("Begin to check MD5 diff.... recvlength = %d\n", recvlength);
 			if(FALSE == recvlength)
 			{
 				// Receive MD5 value fail, error report, close files
@@ -270,7 +262,6 @@ int ReceiveFileStatus(int socket)
 				
 				// Calculate MD5 and check value
 				MD5((unsigned char*)buf, readlength, (unsigned char*)md5buf);
-				write(fm, md5buf, 16);
 
 				for(j = 0; j < 16; j++)
 				{
@@ -316,10 +307,6 @@ int ReceiveFileStatus(int socket)
 		
 		// Send bitmap information
 		printf("Send bitmap information....\n");
-		for(i = 0; i < bitmaplength ; i++)
-		{
-			printf("0x%x", *(bitmap_buf + i));
-		}
 		sendlength = send(socket, bitmap_buf, bitmaplength, 0);
 		if(FALSE == sendlength)
 		{
@@ -329,8 +316,6 @@ int ReceiveFileStatus(int socket)
 			return FALSE;
 		}
 		close(fd);
-		close(fm);
-		close(fr);
 		return TRUE;
 	}
 }
@@ -381,7 +366,6 @@ int SendUpdateData(int socket)
 					return FALSE;
 				}
 				sendlength = send(socket, buf, readlength, 0);
-				printf("sendlength = %d\n", sendlength);
 				if(FALSE == sendlength)
 				{
 					ErrorReport(SEND_DATA_ERR);

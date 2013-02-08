@@ -13,7 +13,10 @@ const char *clientfilename = "client.txt";
 const char *compressedfilename = "client.gz";
 const char *bitmap = "bitmap";
 const char *no_file = "local file not exist!";
+const char *md5 = "md5";
 int bitmaplength;
+char filereplaceind = 0;
+unsigned long long server_file_size = 0;
 
 
 /*-----------------------------------------------------
@@ -64,7 +67,6 @@ int ReceiveFileData(int socket)
     recvlength = recv(socket, buf, MAX_LINE, 0);
     while(recvlength)
     {
-
         if(FALSE == recvlength)
         {	
         	// Receive data fail, error report, close file
@@ -161,13 +163,13 @@ int FileDecompress(void)
 
 int SendLocalFileStatus(int socket)
 {
-	int file_size;
+	unsigned long long client_file_size;
 
 	// Get client file size.
-	file_size = GetFileSize(clientfilename);
-	printf("File size = %u\n", file_size);
+	client_file_size = GetFileSize(clientfilename);
+	printf("File size = %llu\n", client_file_size);
 
-    if( file_size <= MAX_LINE)
+    if( client_file_size <= MAX_LINE)
 	{
 		// No such file, or file size is smaller than one chunck, then send "local file not exist!"
 		if(FALSE == send(socket, no_file , strlen(no_file) + 1, 0))
@@ -187,8 +189,7 @@ int SendLocalFileStatus(int socket)
 		int sendlength;
 
 		// Send MD5 length
-		int md5datalength = ((file_size / MAX_LINE) + 1) * 16;
-		printf("Begin to send MD5 data length, md5datalength = %d\n", md5datalength);
+		int md5datalength = ((client_file_size / MAX_LINE) + 1) * 16;
 		sprintf(data_buf, "%d", md5datalength);
 		if(FALSE == send(socket, data_buf , strlen(data_buf) + 1, 0))
 		{
@@ -204,8 +205,13 @@ int SendLocalFileStatus(int socket)
 			ErrorReport(RECEIVE_DATA_ERR);
 			return FALSE;
 		}		
-		bitmaplength = (int)data_buf[0];	
-		printf("Received bitmaplength = %d\n", bitmaplength);
+		server_file_size = atoi(data_buf);
+		printf("%llu\n", server_file_size);
+		bitmaplength = ((server_file_size / MAX_LINE) /8) + 1;
+		if(server_file_size < client_file_size)
+		{
+			filereplaceind = 1;
+		}
 		unsigned char *md5_data_buf = malloc(md5datalength);
 		bzero(md5_data_buf, md5datalength);
 		
@@ -218,7 +224,6 @@ int SendLocalFileStatus(int socket)
 	        free(md5_data_buf);
 			return FALSE;
 		}
-
 		// Caculate MD5 data for each chunck 
 	    for(i = 0; i < md5datalength; i += 16)
 	    {
@@ -235,7 +240,6 @@ int SendLocalFileStatus(int socket)
 	    }
 
 	    // Send MD5 data to server
-	    printf("Begin to send MD5 data, md5datalength = %d\n", md5datalength);
         sendlength = send(socket, md5_data_buf, md5datalength, 0);
         if (FALSE == sendlength)
         {
@@ -244,12 +248,10 @@ int SendLocalFileStatus(int socket)
             ErrorReport(FILE_WRITE_ERR);
             return FALSE;
         }
-
 		close(fd);
 		free(md5_data_buf);
-	  
 	}
-	return file_size;
+	return client_file_size;
 }
  
  /*-----------------------------------------------------
@@ -285,7 +287,6 @@ int ReceiveBitmapData(int socket)
 		close(fb);
 		return FALSE;
 	}
-	printf("%d\n", *data_buf);
 	writelength = write(fb, data_buf, readlength);
 	if(FALSE == writelength)
 	{
@@ -316,13 +317,11 @@ int ReceiveBitmapData(int socket)
 
 int ReceiveFileUpdate(int socket)
 {
-	int fb,fd;
-	int i,j;
-	int bitindex = 7;
-	int bitmapindex = 0;
+	int fb, fd, fn;
+	int i, j;
 	char data_buf[MAX_LINE];
 	char bitmap_buf[bitmaplength];
-	int readlength, writelength;
+	int recvlength, writelength, readlength;
 	char updatestatus;
 
 	fb = open(bitmap, O_RDONLY);
@@ -350,54 +349,84 @@ int ReceiveFileUpdate(int socket)
 		return FALSE;
 	}
 	// Incremental update, receive updated file chunks
-	bzero(data_buf, MAX_LINE);
-	readlength = recv(socket, data_buf, MAX_LINE, 0);
-	i = 0;
-	j = 7;
-	while(readlength)
+	for(i = 0; i < bitmaplength; i++)
 	{
-		if(FALSE == readlength)
+		for(j = 7; j >= 0; j--)
 		{
-			// Receive data, error report, close files
-			ErrorReport(RECEIVE_DATA_ERR);
-			close(fb);
-			close(fd);
-			return FALSE;
-		}
-		// Get bitmap status, if 1-chunk update, 0-no update
-		for(i = bitmapindex; i < bitmaplength; i++)
-		{
-			for(j = bitindex; j >= 0; j--)
-			{
-				updatestatus = (bitmap_buf[i]>>j) & 0x1;
-				if(1 == updatestatus)
+			updatestatus = (bitmap_buf[i]>>j) & 0x1;
+			if(1 == updatestatus)
+			{	
+				bzero(data_buf, MAX_LINE);
+				recvlength = recv(socket, data_buf, MAX_LINE, 0);
+				if(FALSE == recvlength)
 				{
-					bitmapindex = i;
-					bitindex =j;
-					break;
+					// Receive data, error report, close files
+					ErrorReport(RECEIVE_DATA_ERR);
+					close(fb);
+					close(fd);
+					return FALSE;
+				}
+				lseek(fd, ((i * 8) + (7 - j))* MAX_LINE, SEEK_SET);
+				writelength = write(fd, data_buf, recvlength);
+				if(FALSE == writelength)
+				{
+					// Write original file fail, error report, close files
+					ErrorReport(FILE_WRITE_ERR);
+					close(fb);
+					close(fd);
+					return FALSE;
 				}
 			}
-			if(1 == updatestatus)
+		}
+	}
+	// If file in client > file in server, delete rest content
+	if(1 == filereplaceind)
+	{
+		fn = open("tmp", O_RDWR | O_CREAT);
+		lseek(fd, 0, SEEK_SET);
+		bzero(data_buf, MAX_LINE);
+		readlength = read(fd, data_buf, MAX_LINE);
+		while(readlength)
+		{	
+			if(FALSE == readlength)
+			{
+				// read file error, error report, close files
+				ErrorReport(FILE_READ_ERR);
+				close(fb);
+				close(fd);
+				close(fn);
+				return FALSE;
+			}
+			writelength = write(fn, data_buf, (server_file_size > readlength ? readlength : server_file_size));
+			if(FALSE == writelength)
+			{
+				// Write tmp file fail, error report, close files
+				ErrorReport(FILE_WRITE_ERR);
+				close(fb);
+				close(fd);
+				close(fn);
+				return FALSE;
+			}
+			server_file_size -= readlength;
+			if(server_file_size < 0)
 			{
 				break;
 			}
+			bzero(data_buf, MAX_LINE);
+			readlength = read(fd, data_buf, MAX_LINE);
 		}
-		lseek(fd, ((bitmapindex * 8) + (7 - bitindex))* MAX_LINE, SEEK_SET);
-		writelength = write(fd, data_buf, readlength);
-		if(FALSE == writelength)
-		{
-			// Write original file fail, error report, close files
-			ErrorReport(FILE_WRITE_ERR);
-			close(fb);
-			close(fd);
-			return FALSE;
-		}
-		// Fresh buffer, receive new chunk
-		bzero(data_buf, MAX_LINE);
-		readlength = recv(socket, data_buf, MAX_LINE, 0);
+		close(fd);
+		close(fn);
+		remove(clientfilename);
+		rename("tmp", clientfilename);
 	}
 	close(fb);
-	close(fd);
+	if(filereplaceind != 1)
+	{
+		close(fd);
+	}
+		
+	
 	// Update finish, remove bitmap file
 	remove(bitmap);
 	
