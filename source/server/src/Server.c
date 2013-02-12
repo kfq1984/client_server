@@ -72,7 +72,7 @@ int main(int argc,char **argv)
         client_len = sizeof(client_addr);
         client_sockfd = accept(server_sockfd, (struct sockaddr *)&client_addr, &client_len);
         // create child process to send file
-		pid = fork();
+		pid = vfork();
 		if(pid < 0)
 		{
 			// Create child process fail, error report
@@ -114,7 +114,7 @@ int main(int argc,char **argv)
 					// Send fail, exit
 					exit(1);
 				}
-				printf("processing done");
+				printf("processing done\n");
 				if(FALSE == close(client_sockfd))
 				{
 					// Close socket err, error report

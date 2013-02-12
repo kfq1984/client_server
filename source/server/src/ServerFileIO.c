@@ -10,7 +10,6 @@
 
 // Global variable
 
-//const char *originalfilename = "test.txt";
 const char *originalfilename = "test.txt";
 const char *compressedfilename = "test.gz";
 const char *no_file = "local file not exist!";

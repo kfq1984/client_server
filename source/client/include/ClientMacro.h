@@ -4,7 +4,6 @@
 
 
 /*General macro define*/ 
-#define MAX_BUFFER_SIZE      			4096
 #define MAX_LINE 						4096
 #define SERVER_PORT  					9237
 #define TRUE         					0

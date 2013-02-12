@@ -8,7 +8,6 @@
 #include "ClientMacro.h"
 
 // Global variable
-//const char *clientfilename = "client.txt";
 const char *clientfilename = "client.txt";
 const char *compressedfilename = "client.gz";
 const char *bitmap = "bitmap";
@@ -112,6 +111,7 @@ int FileDecompress(void)
 	char decompressedbuf[MAX_LINE];
 	int decompresslength;
 	int writelength;
+	unsigned long long client_file_size;
 
 
 	// Open file to save original file content
@@ -148,6 +148,10 @@ int FileDecompress(void)
 	}
 	close(fd);
 	gzclose(fc);
+	
+	// Get client file size.
+	client_file_size = GetFileSize(clientfilename);
+	printf("Received client file size = %llu\n", client_file_size);
 	return TRUE;
 
 }
@@ -167,7 +171,7 @@ int SendLocalFileStatus(int socket)
 
 	// Get client file size.
 	client_file_size = GetFileSize(clientfilename);
-	printf("File size = %llu\n", client_file_size);
+	printf("Client file size = %llu\n", client_file_size);
 
     if( client_file_size <= MAX_LINE)
 	{
@@ -206,7 +210,7 @@ int SendLocalFileStatus(int socket)
 			return FALSE;
 		}		
 		server_file_size = atoi(data_buf);
-		printf("%llu\n", server_file_size);
+		printf("Server file size = %llu\n", server_file_size);
 		bitmaplength = ((server_file_size / MAX_LINE) /8) + 1;
 		if(server_file_size < client_file_size)
 		{
@@ -323,6 +327,7 @@ int ReceiveFileUpdate(int socket)
 	char bitmap_buf[bitmaplength];
 	int recvlength, writelength, readlength;
 	char updatestatus;
+	unsigned long long client_file_size;
 
 	fb = open(bitmap, O_RDONLY);
 	if(fb < 0)
@@ -425,7 +430,11 @@ int ReceiveFileUpdate(int socket)
 	{
 		close(fd);
 	}
-		
+
+
+	// Get client file size.
+	client_file_size = GetFileSize(clientfilename);
+	printf("Updated client file size = %llu\n", client_file_size);
 	
 	// Update finish, remove bitmap file
 	remove(bitmap);
